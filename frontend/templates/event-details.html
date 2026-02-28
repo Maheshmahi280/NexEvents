@@ -569,12 +569,7 @@
 {% endblock %} {% block extra_js %}
 <script>
     // Event ID passed from Django template - DO NOT FORMAT THIS LINE
-    const EVENT_ID = {
-        {
-            event_id |
-                default: "0"
-        }
-    };
+    const EVENT_ID = {{ event_id | default:"0" }};
     let currentEvent = null;
 
     document.addEventListener('DOMContentLoaded', function() {
