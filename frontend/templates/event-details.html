@@ -569,7 +569,12 @@
 {% endblock %} {% block extra_js %}
 <script>
     // prettier-ignore
-    const EVENT_ID = {{ event_id | default:"0" }};
+    const EVENT_ID = {
+        {
+            event_id |
+                default: "0"
+        }
+    };
     let currentEvent = null;
 
     document.addEventListener('DOMContentLoaded', function() {
