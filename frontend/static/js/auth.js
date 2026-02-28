@@ -106,6 +106,85 @@ function logout() {
 }
 
 /**
+ * Confirm delete event with warning modal
+ */
+function confirmDelete(eventId, eventName) {
+    if (!eventId) {
+        console.error('[AUTH] No event ID provided for delete');
+        return;
+    }
+
+    // Show the delete warning modal using Bootstrap
+    const deleteModal = document.getElementById('deleteWarningModal');
+    if (deleteModal) {
+        // Set the event name in the modal
+        const eventNameSpan = deleteModal.querySelector('#deleteEventName');
+        if (eventNameSpan) {
+            eventNameSpan.textContent = eventName || 'this event';
+        }
+
+        // Store the event ID for deletion
+        const confirmDeleteBtn = deleteModal.querySelector('#confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            // Remove old onclick if any
+            confirmDeleteBtn.onclick = null;
+            // Add new onclick handler
+            confirmDeleteBtn.onclick = function() {
+                performDelete(eventId);
+                const modal = bootstrap.Modal.getInstance(deleteModal);
+                if (modal) {
+                    modal.hide();
+                }
+            };
+        }
+
+        // Use Bootstrap 5 to show the modal
+        const modal = new bootstrap.Modal(deleteModal);
+        modal.show();
+    } else {
+        // Fallback if modal doesn't exist
+        if (confirm('Are you sure you want to delete "' + eventName + '"? This action cannot be undone.')) {
+            performDelete(eventId);
+        }
+    }
+}
+
+/**
+ * Perform the actual delete operation
+ */
+function performDelete(eventId) {
+    const token = localStorage.getItem('access_token');
+    fetch('/api/events/' + eventId + '/delete/', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Event deleted successfully!');
+                // Check which page we're on and refresh accordingly
+                if (typeof loadOrganizerEvents === 'function') {
+                    loadOrganizerEvents();
+                } else if (typeof goBack === 'function') {
+                    goBack();
+                } else {
+                    window.location.href = '/';
+                }
+            } else {
+                return response.json().then(data => {
+                    alert('Error: ' + (data.error || 'Failed to delete event'));
+                });
+            }
+        })
+        .catch(error => {
+            console.error('[AUTH] Delete error:', error);
+            alert('Error deleting event: ' + error.message);
+        });
+}
+
+/**
  * Get CSRF token from cookie
  */
 function getCSRFToken() {

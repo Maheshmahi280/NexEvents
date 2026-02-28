@@ -325,8 +325,7 @@
             <div class="modal-content" style="border-left: 5px solid #ef4444;">
                 <div class="modal-header" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-bottom: 2px solid #ef4444;">
                     <h5 class="modal-title" id="logoutWarningLabel" style="color: #dc2626; font-weight: 700;">
-                        <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
-                        Confirm Logout
+                        <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i> Confirm Logout
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -346,6 +345,38 @@
                     <button type="button" class="btn btn-danger" onclick="logout()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none;">
                         <i class="fas fa-sign-out-alt" style="margin-right: 0.5rem;"></i>
                         Yes, Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Event Warning Modal -->
+    <div class="modal fade" id="deleteWarningModal" tabindex="-1" aria-labelledby="deleteWarningLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-left: 5px solid #ef4444;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-bottom: 2px solid #ef4444;">
+                    <h5 class="modal-title" id="deleteWarningLabel" style="color: #dc2626; font-weight: 700;">
+                        <i class="fas fa-trash-alt" style="margin-right: 0.5rem;"></i> Delete Event
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 2rem;">
+                    <p style="font-size: 1.05rem; color: #475569; margin-bottom: 0;">
+                        <strong>Are you sure you want to delete "<span id="deleteEventName">this event</span>"?</strong>
+                    </p>
+                    <p style="color: #64748b; margin-top: 1rem; margin-bottom: 0;">
+                        This action cannot be undone.
+                    </p>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e2e8f0; padding: 1rem;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times" style="margin-right: 0.5rem;"></i>
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none;">
+                        <i class="fas fa-trash-alt" style="margin-right: 0.5rem;"></i>
+                        Yes, Delete
                     </button>
                 </div>
             </div>

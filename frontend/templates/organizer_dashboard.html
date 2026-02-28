@@ -603,30 +603,7 @@
     }
 
     function deleteEvent(eventId, eventName) {
-        if (confirm('Are you sure you want to delete "' + eventName + '"? This action cannot be undone.')) {
-            const token = localStorage.getItem('access_token');
-            fetch('/api/events/' + eventId + '/delete/', {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('Event deleted successfully!');
-                        loadOrganizerEvents();
-                    } else {
-                        return response.json().then(data => {
-                            alert('Error: ' + (data.error || 'Failed to delete event'));
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('[ORG-DASH] Delete error:', error);
-                    alert('Error deleting event: ' + error.message);
-                });
-        }
+        confirmDelete(eventId, eventName);
     }
 </script>
 {% endblock %}
