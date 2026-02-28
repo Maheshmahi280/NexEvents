@@ -45,17 +45,24 @@ function isAuthenticated() {
 }
 
 /**
- * Confirm logout with warning message
+ * Confirm logout with warning modal
  */
 function confirmLogout(event) {
     if (event) {
         event.preventDefault();
     }
 
-    var confirmed = confirm('Are you sure you want to logout?\n\nYou will need to login again to access your account.');
-
-    if (confirmed) {
-        logout();
+    // Show the logout warning modal using Bootstrap
+    const logoutModal = document.getElementById('logoutWarningModal');
+    if (logoutModal) {
+        // Use Bootstrap 5 to show the modal
+        const modal = new bootstrap.Modal(logoutModal);
+        modal.show();
+    } else {
+        // Fallback if modal doesn't exist
+        if (confirm('Are you sure you want to logout?\n\nYou will need to login again to access your account.')) {
+            logout();
+        }
     }
 }
 
