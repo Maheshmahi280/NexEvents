@@ -625,6 +625,9 @@
 
                 console.log('[CREATE] Event created successfully!');
 
+                // Store success message in localStorage for dashboard display
+                localStorage.setItem('eventCreatedSuccess', eventData.name);
+
                 // Show success message
                 document.getElementById('successMessage').innerHTML =
                     '<p id="successText">You have successfully created event: <strong>"' + eventData.name + '"</strong></p>' +

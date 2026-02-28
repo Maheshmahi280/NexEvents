@@ -302,6 +302,32 @@
     }
 </style>
 {% endblock %} {% block content %}
+
+<!-- Success Toast Notification -->
+<div id="successToast" style="display: none; position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #10b981; border-radius: 12px; padding: 1.5rem; min-width: 320px; max-width: 400px; box-shadow: 0 10px 40px rgba(16, 185, 129, 0.2); z-index: 9999; animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <div style="flex-shrink: 0; width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 20px;">✓</div>
+        <div style="flex-grow: 1;">
+            <p style="margin: 0 0 0.5rem 0; color: #15803d; font-weight: 700; font-size: 16px;">Event Created Successfully!</p>
+            <p style="margin: 0; color: #16a34a; font-size: 14px;" id="toastMessage"></p>
+        </div>
+        <button onclick="document.getElementById('successToast').style.display='none';" style="background: none; border: none; color: #15803d; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px;">×</button>
+    </div>
+</div>
+
+<style>
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+</style>
+
 <!-- Header Section -->
 <div class="header-section">
     <div class="container-lg">
@@ -415,6 +441,26 @@
     // Load events on page load
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('[ORG-DASH] Initializing organizer dashboard...');
+
+        // Check for event creation success message
+        const eventCreatedSuccess = localStorage.getItem('eventCreatedSuccess');
+        if (eventCreatedSuccess) {
+            console.log('[ORG-DASH] Event created successfully:', eventCreatedSuccess);
+            const toastDiv = document.getElementById('successToast');
+            const toastMessage = document.getElementById('toastMessage');
+            if (toastDiv && toastMessage) {
+                toastMessage.textContent = 'You have successfully created event "' + eventCreatedSuccess + '"';
+                toastDiv.style.display = 'block';
+                
+                // Auto-hide after 5 seconds
+                setTimeout(function() {
+                    toastDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Clear the flag
+            localStorage.removeItem('eventCreatedSuccess');
+        }
 
         // Store token from URL if present (first visit after login)
         const urlParams = new URLSearchParams(window.location.search);
