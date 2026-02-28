@@ -365,6 +365,21 @@
         }
 
         /**
+         * Display debug/status message on page
+         */
+        function showDebugMessage(message, type = 'info') {
+            console.log('[DEBUG] ' + message);
+            const debugDiv = document.getElementById('successMessage');
+            if (debugDiv) {
+                const bgColor = type === 'error' ? '#fee2e2' : type === 'success' ? '#f0fdf4' : '#f0f4f8';
+                const textColor = type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : '#0f172a';
+                debugDiv.innerHTML = '<p style="color: ' + textColor + '; font-weight: 600;">[' + type.toUpperCase() + '] ' + message + '</p>';
+                debugDiv.style.backgroundColor = bgColor;
+                debugDiv.classList.add('show');
+            }
+        }
+
+        /**
          * Clear form errors
          */
         function clearFormErrors() {
@@ -471,6 +486,7 @@
             // Validate form
             if (!validateCreateEventForm()) {
                 console.warn('[CREATE] Form validation failed');
+                showDebugMessage('Form validation failed. Please check all required fields.', 'error');
                 return;
             }
 
@@ -496,15 +512,19 @@
                 };
 
                 console.log('[CREATE] Event data:', eventData);
+                showDebugMessage('Event data prepared. Token status: ' + (localStorage.getItem('access_token') ? 'Present' : 'MISSING'), 'info');
 
                 // Make API call directly with fetch for reliability
                 const token = localStorage.getItem('access_token');
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                if (token) {
-                    headers['Authorization'] = 'Bearer ' + token;
+                if (!token) {
+                    throw new Error('⚠️ No authentication token found. Please ensure you are logged in.');
                 }
+
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                };
+
                 // Always include CSRF token for session-based auth fallback
                 let csrfToken = getCSRFToken();
                 // Fallback: read from hidden input if cookie not available
@@ -516,6 +536,8 @@
                     headers['X-CSRFToken'] = csrfToken;
                 }
 
+                showDebugMessage('Sending request to /api/events/create/...', 'info');
+
                 const response = await fetch('/api/events/create/', {
                     method: 'POST',
                     headers: headers,
@@ -525,6 +547,7 @@
 
                 const responseData = await response.json();
                 console.log('[CREATE] API response:', response.status, responseData);
+                showDebugMessage('API response received (Status: ' + response.status + ')', 'info');
 
                 if (!response.ok) {
                     // Build error message from response
