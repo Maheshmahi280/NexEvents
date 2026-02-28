@@ -478,9 +478,7 @@
         <h1>Discover Amazing Events That Matter</h1>
         <p>Connect with like-minded people at events you'll love</p>
         <div class="hero-actions">
-            {% if user.is_authenticated %} {% if user.profile.role == 'Seeker' %}
-            <a href="{% url 'seeker-dashboard' %}" class="btn-hero btn-primary-light">Go to Dashboard</a> {% else %}
-            <a href="{% url 'organizer-dashboard' %}" class="btn-hero btn-primary-light">Go to Dashboard</a> {% endif %} {% else %}
+            {% if user.is_authenticated %} {% else %}
             <a href="/join" class="btn-hero btn-secondary-light">Join Now</a> {% endif %}
         </div>
     </div>
