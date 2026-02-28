@@ -59,7 +59,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [str(BASE_DIR / 'templates')],
+        'DIRS': [str(BASE_DIR.parent / 'frontend' / 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -121,7 +121,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = str(BASE_DIR / 'staticfiles')
-STATICFILES_DIRS = [str(BASE_DIR / 'static')]
+STATICFILES_DIRS = [str(BASE_DIR.parent / 'frontend' / 'static')]
 
 # REST Framework Configuration
 REST_FRAMEWORK = {

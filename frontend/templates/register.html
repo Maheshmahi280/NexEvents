@@ -1,0 +1,742 @@
+{% extends 'base.html' %} {% block title %}Register - NexEvent{% endblock %} {% block extra_css %}
+<style>
+     :root {
+        --primary-color: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+        --secondary-color: #8b5cf6;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --dark-gray: #111827;
+        --light-gray: #f9fafb;
+        --border-color: #e5e7eb;
+        --text-muted: #6b7280;
+    }
+    
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+    
+    .register-container {
+        width: 100%;
+        max-width: 500px;
+    }
+    
+    .register-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 50px 40px;
+        animation: slideUp 0.5s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .register-header {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+    
+    .register-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--dark-gray);
+        margin-bottom: 10px;
+    }
+    
+    .register-header p {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+    
+    .role-selection {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .role-option {
+        position: relative;
+    }
+    
+    .role-option input[type="radio"] {
+        display: none;
+    }
+    
+    .role-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .role-option input[type="radio"]:checked+.role-label {
+        border-color: var(--primary-color);
+        background: rgba(99, 102, 241, 0.08);
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .role-label:hover {
+        border-color: var(--primary-color);
+        background: rgba(99, 102, 241, 0.06);
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+        transform: translateY(-4px);
+    }
+    
+    .role-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease;
+        display: inline-block;
+    }
+    
+    .role-label:hover .role-icon {
+        font-size: 36px;
+        animation: bounce 0.6s ease;
+    }
+    
+    @keyframes bounce {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-8px);
+        }
+    }
+    
+    .role-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dark-gray);
+        margin-bottom: 4px;
+        transition: all 0.3s ease;
+    }
+    
+    .role-label:hover .role-title {
+        color: var(--primary-color);
+        font-size: 15px;
+    }
+    
+    .role-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+        transition: all 0.3s ease;
+    }
+    
+    .role-label:hover .role-desc {
+        color: var(--primary-dark);
+        font-size: 12px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--dark-gray);
+        margin-bottom: 8px;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 14px;
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        background-color: rgba(99, 102, 241, 0.02);
+    }
+    
+    .form-group input::placeholder {
+        color: var(--text-muted);
+    }
+    
+    .password-requirements {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        padding: 10px;
+        background: var(--light-gray);
+        border-radius: 8px;
+        display: none;
+    }
+    
+    .password-requirements.show {
+        display: block;
+    }
+    
+    .requirement {
+        margin: 4px 0;
+    }
+    
+    .requirement.met {
+        color: var(--success-color);
+    }
+    
+    .error-message {
+        display: block;
+        color: var(--danger-color);
+        font-size: 12px;
+        margin-top: 6px;
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .btn-register {
+        width: 100%;
+        padding: 14px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 15px;
+    }
+    
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    }
+    
+    .btn-register:active {
+        transform: translateY(0);
+    }
+    
+    .btn-register:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .register-footer {
+        text-align: center;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .register-footer p {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+    
+    .register-footer a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .register-footer a:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+    
+    @keyframes glow-blink {
+        0%,
+        100% {
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+        }
+        25% {
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+        50% {
+            background: rgba(99, 102, 241, 0.2);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+        }
+        75% {
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+    }
+    
+    .role-blink {
+        animation: glow-blink 0.8s ease-in-out 3;
+        border-radius: 12px;
+    }
+    
+    .form-fields-highlight {
+        animation: highlight-pulse 1s ease-in-out 3;
+    }
+    
+    @keyframes highlight-pulse {
+        0%,
+        100% {
+            background: transparent;
+        }
+        50% {
+            background: rgba(99, 102, 241, 0.08);
+        }
+    }
+    
+    @media (max-width: 600px) {
+        .register-card {
+            padding: 40px 25px;
+        }
+        .register-header h1 {
+            font-size: 24px;
+        }
+        .role-selection {
+            grid-template-columns: 1fr;
+        }
+        main {
+            padding: 20px 15px;
+        }
+    }
+</style>
+{% endblock %} {% block content %}
+
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <h1>Join NexEvent</h1>
+            <p>Create your account and start exploring events</p>
+        </div>
+
+        <form id="registerForm" class="register-form">
+            <div>
+                {% if role %}
+                <!-- Pre-selected role from URL -->
+                <input type="hidden" name="role" value="{{ role }}">
+                <div id="roleDisplay" class="role-blink" style="padding: 15px; background: rgba(99, 102, 241, 0.05); border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                    <p style="font-size: 14px; color: var(--dark-gray); margin: 0;">
+                        <strong style="font-size: 16px; color: #6366f1;">✓ You're signing up as: <span style="color: #6366f1; text-transform: capitalize;">{{ role_display }}</span></strong>
+                    </p>
+                </div>
+                {% else %}
+                <!-- Role selection if not pre-determined -->
+                <label style="font-size: 14px; font-weight: 600; color: var(--dark-gray); margin-bottom: 12px; display: block;">
+                    I'm interested in
+                </label>
+                <div class="role-selection">
+                    <div class="role-option">
+                        <input type="radio" id="seeker" name="role" value="Seeker" required onchange="triggerFormBlink()">
+                        <label for="seeker" class="role-label">
+                            <span class="role-icon">🎫</span>
+                            <span class="role-title">Attending Events</span>
+                            <span class="role-desc">Find & join events</span>
+                        </label>
+                    </div>
+                    <div class="role-option">
+                        <input type="radio" id="organizer" name="role" value="Organizer" onchange="triggerFormBlink()">
+                        <label for="organizer" class="role-label">
+                            <span class="role-icon">📋</span>
+                            <span class="role-title">Organizing Events</span>
+                            <span class="role-desc">Create & manage events</span>
+                        </label>
+                    </div>
+                </div>
+                <span class="error-message" id="roleError"></span> {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" name="first_name" placeholder="John" required>
+                <span class="error-message" id="firstNameError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" name="last_name" placeholder="Doe" required>
+                <span class="error-message" id="lastNameError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="regUsername">Username</label>
+                <input type="text" id="regUsername" name="username" placeholder="Choose a unique username" required>
+                <span class="error-message" id="usernameError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="regEmail">Email Address</label>
+                <input type="email" id="regEmail" name="email" placeholder="your@email.com" required>
+                <span class="error-message" id="emailError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="regPassword">Password</label>
+                <input type="password" id="regPassword" name="password" placeholder="Create a strong password" required onkeyup="checkPasswordStrength()">
+                <div class="password-requirements" id="passwordReqs">
+                    <div class="requirement" id="req-length">
+                        <span>✓</span> At least 8 characters
+                    </div>
+                    <div class="requirement" id="req-upper">
+                        <span>✓</span> One uppercase letter
+                    </div>
+                    <div class="requirement" id="req-lower">
+                        <span>✓</span> One lowercase letter
+                    </div>
+                    <div class="requirement" id="req-number">
+                        <span>✓</span> One number
+                    </div>
+                </div>
+                <span class="error-message" id="passwordError"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                <span class="error-message" id="confirmPasswordError"></span>
+            </div>
+
+            <div id="registerError" class="error-message"></div>
+            <div id="registerSuccess" style="display: none; color: var(--success-color); font-size: 14px; margin-bottom: 15px; text-align: center; animation: slideDown 0.3s ease-out;">
+                <strong>✓ Account created successfully! Redirecting...</strong>
+            </div>
+
+            <button type="submit" class="btn-register">Create Account</button>
+        </form>
+
+        <div class="register-footer">
+            <p>Already have an account? <a href="/login{% if role %}?role={{ role }}{% endif %}">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+    function checkPasswordStrength() {
+        const password = document.getElementById('regPassword').value;
+        const reqs = document.getElementById('passwordReqs');
+
+        if (password.length > 0) {
+            reqs.classList.add('show');
+        } else {
+            reqs.classList.remove('show');
+        }
+
+        // Check length
+        const hasLength = password.length >= 8;
+        updateRequirement('req-length', hasLength);
+
+        // Check uppercase
+        const hasUpper = /[A-Z]/.test(password);
+        updateRequirement('req-upper', hasUpper);
+
+        // Check lowercase
+        const hasLower = /[a-z]/.test(password);
+        updateRequirement('req-lower', hasLower);
+
+        // Check number
+        const hasNumber = /[0-9]/.test(password);
+        updateRequirement('req-number', hasNumber);
+    }
+
+    function updateRequirement(id, met) {
+        const elem = document.getElementById(id);
+        if (met) {
+            elem.classList.add('met');
+        } else {
+            elem.classList.remove('met');
+        }
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Collect form data
+        // Get role either from radio selection or hidden input
+        let roleElement = document.querySelector('input[name="role"]:checked');
+        let role = roleElement ? roleElement.value : document.querySelector('input[name="role"]').value;
+
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const username = document.getElementById('regUsername').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        // Clear previous errors
+        const roleErrorEl = document.getElementById('roleError');
+        if (roleErrorEl) {
+            roleErrorEl.textContent = '';
+        }
+        document.getElementById('firstNameError').textContent = '';
+        document.getElementById('lastNameError').textContent = '';
+        document.getElementById('usernameError').textContent = '';
+        document.getElementById('emailError').textContent = '';
+        document.getElementById('passwordError').textContent = '';
+        document.getElementById('confirmPasswordError').textContent = '';
+        document.getElementById('registerError').textContent = '';
+
+        let isValid = true;
+
+        if (!role) {
+            if (roleErrorEl) {
+                roleErrorEl.textContent = 'Please select your role';
+            }
+            isValid = false;
+        }
+
+        if (!firstName.trim()) {
+            document.getElementById('firstNameError').textContent = 'First name is required';
+            isValid = false;
+        }
+
+        if (!lastName.trim()) {
+            document.getElementById('lastNameError').textContent = 'Last name is required';
+            isValid = false;
+        }
+
+        if (!username.trim()) {
+            document.getElementById('usernameError').textContent = 'Username is required';
+            isValid = false;
+        }
+
+        if (!email.trim()) {
+            document.getElementById('emailError').textContent = 'Email is required';
+            isValid = false;
+        } else if (!email.includes('@')) {
+            document.getElementById('emailError').textContent = 'Please enter a valid email';
+            isValid = false;
+        }
+
+        if (password.length < 8) {
+            document.getElementById('passwordError').textContent = 'Password must be at least 8 characters';
+            isValid = false;
+        }
+
+        if (password !== confirmPassword) {
+            document.getElementById('confirmPasswordError').textContent = 'Passwords do not match';
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        // Call register API
+        registerUser(username, email, password, firstName, lastName, role);
+    });
+
+    function registerUser(username, email, password, firstName, lastName, role) {
+        const registerBtn = document.querySelector('.btn-register');
+        registerBtn.disabled = true;
+        registerBtn.textContent = 'Creating Account...';
+
+        fetch('/api/register/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    role: role
+                })
+            })
+            .then(response => {
+                console.log('Registration response status:', response.status);
+                console.log('Response type:', response.headers.get('content-type'));
+
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        console.error('Registration error from API:', data);
+
+                        // If we have specific field errors, throw an object with field info
+                        if (data.fields && typeof data.fields === 'object') {
+                            const fieldErrors = data.fields;
+                            throw {
+                                type: 'validation',
+                                fields: fieldErrors,
+                                message: data.error || 'Validation failed'
+                            };
+                        }
+
+                        throw new Error(data.error || data.message || 'Registration failed');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Registration successful! Full response:', data);
+                console.log('User role from registration:', data.role);
+
+                // Show success message
+                const registerError = document.getElementById('registerError');
+                const registerSuccess = document.getElementById('registerSuccess');
+                registerError.style.display = 'none';
+                registerSuccess.style.display = 'block';
+
+                // Automatically log the user in
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('user_role', data.role);
+
+                // Redirect based on role
+                const userRole = data.role;
+                console.log('Stored role:', userRole);
+
+                if (userRole === 'Seeker') {
+                    console.log('User is Seeker, redirecting to /seeker-dashboard...');
+                    setTimeout(() => {
+                        window.location.href = `/seeker-dashboard?token=${data.access}`;
+                    }, 1500);
+                } else if (userRole === 'Organizer') {
+                    console.log('User is Organizer, redirecting to /organizer-dashboard...');
+                    setTimeout(() => {
+                        window.location.href = `/organizer-dashboard?token=${data.access}`;
+                    }, 1500);
+                } else {
+                    console.log('Unknown role:', userRole, ' - redirecting to home');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                }
+            })
+            .catch(error => {
+                console.error('Registration error caught:', error);
+                const registerError = document.getElementById('registerError');
+                const registerBtn = document.querySelector('.btn-register');
+
+                // Handle field-specific validation errors
+                if (error.type === 'validation' && error.fields) {
+                    console.log('Field validation errors:', error.fields);
+
+                    // Map backend field names to frontend element IDs
+                    const fieldMap = {
+                        'username': 'usernameError',
+                        'email': 'emailError',
+                        'password': 'passwordError',
+                        'first_name': 'firstNameError',
+                        'last_name': 'lastNameError',
+                        'role': 'roleError'
+                    };
+
+                    // Display each field error
+                    for (const [field, errorMsg] of Object.entries(error.fields)) {
+                        const errorId = fieldMap[field];
+                        if (errorId) {
+                            const errorEl = document.getElementById(errorId);
+                            if (errorEl) {
+                                errorEl.textContent = errorMsg;
+                                errorEl.style.display = 'block';
+                            }
+                        }
+                    }
+
+                    // Also show a summary in the main error div
+                    registerError.textContent = error.message || 'Please fix the errors above';
+                } else {
+                    // Generic error message
+                    registerError.textContent = error.message || 'Registration failed. Please try again.';
+                }
+
+                registerBtn.disabled = false;
+                registerBtn.textContent = 'Create Account';
+            });
+    }
+</script>
+
+<script>
+    // Function to trigger form blink animation when role is selected
+    function triggerFormBlink() {
+        const roleDisplay = document.getElementById('roleDisplay');
+        const formFields = document.querySelectorAll('.form-group');
+        const selectedRole = document.querySelector('input[name="role"]:checked').value;
+
+        let displayDiv;
+        const existingDisplay = document.getElementById('roleDisplay');
+
+        if (!existingDisplay) {
+            displayDiv = document.createElement('div');
+            displayDiv.id = 'roleDisplay';
+            displayDiv.className = 'role-blink';
+            displayDiv.style.cssText = 'padding: 15px; background: rgba(99, 102, 241, 0.05); border-radius: 12px; margin-bottom: 20px; text-align: center;';
+
+            const roleLabel = selectedRole === 'Seeker' ? 'Attendee' : 'Organizer';
+            displayDiv.innerHTML = '<p style="font-size: 14px; color: var(--dark-gray); margin: 0;"><strong style="font-size: 16px; color: #6366f1;">✓ You\'re signing up as: <span style="color: #6366f1; text-transform: capitalize;">' + roleLabel + '</span></strong></p>';
+
+            const radioDiv = document.querySelector('input[name="role"]').closest('div').parentElement;
+            radioDiv.insertBefore(displayDiv, radioDiv.firstChild);
+        } else {
+            displayDiv = existingDisplay;
+        }
+
+        displayDiv.classList.remove('role-blink');
+        void displayDiv.offsetWidth;
+        displayDiv.classList.add('role-blink');
+
+        formFields.forEach(function(field) {
+            field.classList.remove('form-fields-highlight');
+            void field.offsetWidth;
+            field.classList.add('form-fields-highlight');
+        });
+    }
+
+    // Pre-select role from URL parameter if present
+    window.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roleParam = urlParams.get('role');
+
+        if (roleParam === 'Seeker' || roleParam === 'Organizer') {
+            const roleInput = document.getElementById(roleParam.toLowerCase());
+            if (roleInput) {
+                roleInput.checked = true;
+            }
+        }
+    });
+</script>
+{% endblock %}

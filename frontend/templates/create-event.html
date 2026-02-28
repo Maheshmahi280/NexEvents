@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event - NexEvent</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .create-event-container {
+            max-width: 700px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            max-height: 300px;
+        }
+        
+        .char-counter {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .char-counter.warning {
+            color: var(--warning);
+        }
+        
+        .char-counter.error {
+            color: var(--danger);
+        }
+        
+        .error-message-inline {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        
+        .error-message-inline.show {
+            display: block;
+        }
+        
+        .form-input.error,
+        .form-textarea.error,
+        .form-select.error {
+            border-color: var(--danger);
+            background-color: var(--error-bg);
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn-container button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-submit {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-submit:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-submit:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .btn-cancel {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .btn-cancel:hover {
+            background: var(--text-secondary);
+            color: white;
+        }
+        
+        .success-message {
+            background: var(--success-bg);
+            color: var(--success);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        .form-header {
+            margin-bottom: 2rem;
+        }
+        
+        .form-header h1 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+        }
+        
+        .form-header p {
+            margin: 0;
+            color: var(--text-secondary);
+        }
+        
+        .date-time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        @media (max-width: 600px) {
+            .create-event-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            .date-time-group {
+                grid-template-columns: 1fr;
+            }
+            .btn-container {
+                flex-direction: column;
+            }
+        }
+        
+        .required-field::after {
+            content: " *";
+            color: var(--danger);
+        }
+        
+        .form-help-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/">NexEvent</a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="/#events" class="nav-link">Events</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" id="dashboardLink" onclick="goBack(); return false;">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="confirmLogout(event)">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Create Event Form -->
+    <div class="create-event-container">
+        <div class="form-header">
+            <h1>Create New Event</h1>
+            <p>Share your event with the community</p>
+        </div>
+
+        <div id="successMessage" class="success-message">
+            <p id="successText">Event created successfully! Redirecting...</p>
+        </div>
+
+        <form id="createEventForm">
+            {% csrf_token %}
+            <!-- Event Name -->
+            <div class="form-group">
+                <label for="eventName" class="required-field">Event Name</label>
+                <input type="text" id="eventName" class="form-input" placeholder="Enter event name" maxlength="200" required>
+                <div id="nameError" class="error-message-inline"></div>
+                <div class="form-help-text">3-200 characters</div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label for="description" class="required-field">Description</label>
+                <textarea id="description" class="form-textarea" placeholder="Describe your event (10-500 characters)" maxlength="500" required></textarea>
+                <div class="char-counter">
+                    <span id="charCount">0 / 500</span>
+                    <span id="charWarning" style="display:none;">❌ Too long</span>
+                </div>
+                <div id="descError" class="error-message-inline"></div>
+            </div>
+
+            <!-- Date and Time -->
+            <div class="date-time-group">
+                <div class="form-group">
+                    <label for="eventDate" class="required-field">Date</label>
+                    <input type="date" id="eventDate" class="form-input" required>
+                    <div id="dateError" class="error-message-inline"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="eventTime" class="required-field">Time</label>
+                    <input type="time" id="eventTime" class="form-input" required>
+                    <div id="timeError" class="error-message-inline"></div>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="form-group">
+                <label for="location" class="required-field">Location</label>
+                <input type="text" id="location" class="form-input" placeholder="Where will this event take place?" maxlength="200" required>
+                <div id="locationError" class="error-message-inline"></div>
+                <div class="form-help-text">2-200 characters</div>
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+                <label for="category" class="required-field">Category</label>
+                <select id="category" class="form-select" required>
+                    <option value="">-- Select a category --</option>
+                    <option value="Tech">Technology</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Education">Education</option>
+                </select>
+                <div id="categoryError" class="error-message-inline"></div>
+            </div>
+
+            <!-- Ticket Price (Optional) -->
+            <div class="form-group">
+                <label for="ticketPrice">Ticket Price (₹)</label>
+                <input type="number" id="ticketPrice" class="form-input" placeholder="0.00" min="0" step="0.01" value="0">
+                <div class="form-help-text">Leave as 0 for free events</div>
+            </div>
+
+            <!-- Cover Image URL (Optional) -->
+            <div class="form-group">
+                <label for="coverImage">Cover Image URL (Optional)</label>
+                <input type="url" id="coverImage" class="form-input" placeholder="https://example.com/image.jpg">
+                <div class="form-help-text">Enter a valid image URL to display on your event card</div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="btn-container">
+                <button type="submit" class="btn-submit" id="submitBtn">Create Event</button>
+                <button type="button" class="btn-cancel" onclick="goBack()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/api.js?v=2"></script>
+    <script src="/static/js/auth.js?v=2"></script>
+
+    <script>
+        /**
+         * Initialize create event page
+         */
+        function initializeCreateEvent() {
+            console.log('[CREATE] Initializing create event page...');
+
+            // Store token from URL if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                localStorage.setItem('access_token', tokenFromUrl);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            console.log('[CREATE] Setting up form...');
+
+            // Set up form handlers
+            const form = document.getElementById('createEventForm');
+            if (form) {
+                form.addEventListener('submit', handleCreateEventSubmit);
+                console.log('[CREATE] Form submit handler attached');
+            } else {
+                console.error('[CREATE] Form element not found!');
+            }
+
+            // Set up character counter
+            const descriptionInput = document.getElementById('description');
+            if (descriptionInput) {
+                descriptionInput.addEventListener('input', updateCharCounter);
+                // Set min date to today
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('eventDate').setAttribute('min', today);
+            }
+        }
+
+        /**
+         * Update character counter for description
+         */
+        function updateCharCounter() {
+            const textarea = document.getElementById('description');
+            const counter = document.getElementById('charCount');
+            const warning = document.getElementById('charWarning');
+            const count = textarea.value.length;
+
+            counter.textContent = `${count} / 500`;
+
+            // Show warning when near limit
+            if (count > 450) {
+                counter.parentElement.classList.add('warning');
+                warning.style.display = 'inline';
+            } else if (count > 500) {
+                counter.parentElement.classList.add('error');
+            } else {
+                counter.parentElement.classList.remove('warning', 'error');
+                warning.style.display = 'none';
+            }
+        }
+
+        /**
+         * Clear form errors
+         */
+        function clearFormErrors() {
+            const errorElements = document.querySelectorAll('.error-message-inline');
+            errorElements.forEach(el => {
+                el.textContent = '';
+                el.classList.remove('show');
+            });
+
+            const inputs = document.querySelectorAll('.form-input, .form-textarea, .form-select');
+            inputs.forEach(input => {
+                input.classList.remove('error');
+            });
+        }
+
+        /**
+         * Display error for a field
+         */
+        function displayFieldError(fieldId, message) {
+            const input = document.getElementById(fieldId);
+            const errorEl = document.getElementById(fieldId + 'Error');
+
+            if (input && errorEl) {
+                input.classList.add('error');
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+            }
+        }
+
+        /**
+         * Validate form before submission
+         */
+        function validateCreateEventForm() {
+            clearFormErrors();
+            const errors = {};
+
+            // Get form values
+            const name = document.getElementById('eventName').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const location = document.getElementById('location').value.trim();
+            const category = document.getElementById('category').value;
+
+            // Validate name
+            if (!name) {
+                errors['eventName'] = 'Event name is required';
+            } else if (name.length < 3) {
+                errors['eventName'] = 'Event name must be at least 3 characters';
+            } else if (name.length > 200) {
+                errors['eventName'] = 'Event name must be at most 200 characters';
+            }
+
+            // Validate description
+            if (!description) {
+                errors['description'] = 'Description is required';
+            } else if (description.length < 10) {
+                errors['description'] = 'Description must be at least 10 characters';
+            } else if (description.length > 500) {
+                errors['description'] = 'Description must be at most 500 characters';
+            }
+
+            // Validate date and time
+            if (!date) {
+                errors['eventDate'] = 'Event date is required';
+            }
+
+            if (!time) {
+                errors['eventTime'] = 'Event time is required';
+            }
+
+            // Validate location
+            if (!location) {
+                errors['location'] = 'Location is required';
+            } else if (location.length < 2) {
+                errors['location'] = 'Location must be at least 2 characters';
+            } else if (location.length > 200) {
+                errors['location'] = 'Location must be at most 200 characters';
+            }
+
+            // Validate category
+            if (!category) {
+                errors['category'] = 'Please select a category';
+            }
+
+            // Display errors if any
+            if (Object.keys(errors).length > 0) {
+                for (const [field, message] of Object.entries(errors)) {
+                    displayFieldError(field, message);
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Handle create event form submission
+         */
+        async function handleCreateEventSubmit(event) {
+            event.preventDefault();
+            console.log('[CREATE] Submitting create event form...');
+
+            // Validate form
+            if (!validateCreateEventForm()) {
+                console.warn('[CREATE] Form validation failed');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            try {
+                // Combine date and time into ISO format
+                const date = document.getElementById('eventDate').value;
+                const time = document.getElementById('eventTime').value;
+                const dateTime = `${date}T${time}:00`;
+
+                const eventData = {
+                    name: document.getElementById('eventName').value.trim(),
+                    description: document.getElementById('description').value.trim(),
+                    date_time: dateTime,
+                    location: document.getElementById('location').value.trim(),
+                    category: document.getElementById('category').value,
+                    cover_image: document.getElementById('coverImage').value.trim() || '',
+                    ticket_price: parseFloat(document.getElementById('ticketPrice').value) || 0,
+                };
+
+                console.log('[CREATE] Event data:', eventData);
+
+                // Make API call directly with fetch for reliability
+                const token = localStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                // Always include CSRF token for session-based auth fallback
+                let csrfToken = getCSRFToken();
+                // Fallback: read from hidden input if cookie not available
+                if (!csrfToken) {
+                    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                    if (csrfInput) csrfToken = csrfInput.value;
+                }
+                if (csrfToken) {
+                    headers['X-CSRFToken'] = csrfToken;
+                }
+
+                const response = await fetch('/api/events/create/', {
+                    method: 'POST',
+                    headers: headers,
+                    credentials: 'same-origin',
+                    body: JSON.stringify(eventData)
+                });
+
+                const responseData = await response.json();
+                console.log('[CREATE] API response:', response.status, responseData);
+
+                if (!response.ok) {
+                    // Build error message from response
+                    let errorMsg = responseData.error || 'Failed to create event';
+                    if (responseData.fields) {
+                        const fieldErrors = Object.entries(responseData.fields)
+                            .map(function(entry) {
+                                return entry[0] + ': ' + entry[1];
+                            })
+                            .join('\n');
+                        errorMsg += '\n' + fieldErrors;
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                console.log('[CREATE] Event created successfully!');
+
+                // Show success message
+                document.getElementById('successMessage').innerHTML =
+                    '<p id="successText" style="color: #10b981; font-weight: 600;">✓ Event "' + eventData.name + '" created successfully!</p>' +
+                    '<div style="margin-top: 1rem; display: flex; gap: 1rem;">' +
+                    '<button type="button" class="btn-submit" style="flex: 1; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="resetForm()">Create Another Event</button>' +
+                    '<button type="button" class="btn-cancel" style="flex: 1; padding: 0.75rem; background: var(--border-color); color: var(--text-primary); border: none; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="goToDashboard()">Go to Dashboard</button>' +
+                    '</div>';
+                document.getElementById('successMessage').style.backgroundColor = '#f0fdf4';
+                document.getElementById('successMessage').classList.add('show');
+
+            } catch (error) {
+                console.error('[CREATE] Error:', error.message);
+
+                // Show error message in the page
+                const successDiv = document.getElementById('successMessage');
+                if (successDiv) {
+                    successDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                    successDiv.classList.add('show');
+                    successDiv.style.backgroundColor = '#fee2e2';
+                }
+
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        /**
+         * Navigate back to previous page
+         */
+        function goBack() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/';
+            } else {
+                const userRole = localStorage.getItem('user_role') || 'Organizer';
+                window.location.href = userRole === 'Seeker' ? '/seeker-dashboard' : '/organizer-dashboard';
+            }
+        }
+
+        /**
+         * Reset form after successful event creation
+         */
+        function resetForm() {
+            console.log('[CREATE] Resetting form for another event...');
+
+            // Clear all form fields
+            document.getElementById('createEventForm').reset();
+            document.getElementById('charCount').textContent = '0 / 500';
+
+            // Clear success message
+            document.getElementById('successMessage').classList.remove('show');
+            document.getElementById('successMessage').innerHTML = '<p id="successText">Event created successfully! Redirecting...</p>';
+            document.getElementById('successMessage').style.backgroundColor = '';
+
+            // Reset button state
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Event';
+
+            // Set min date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('eventDate').setAttribute('min', today);
+
+            // Focus on the name field to start filling the form
+            document.getElementById('eventName').focus();
+        }
+
+        /**
+         * Go to dashboard after event creation
+         */
+        function goToDashboard() {
+            const userRole = localStorage.getItem('user_role') || 'Organizer';
+            const dashboardUrl = userRole === 'Seeker' ? '/seeker-dashboard' : '/organizer-dashboard';
+            window.location.href = dashboardUrl;
+        }
+
+        // Initialize when DOM is ready
+        console.log('[CREATE] Script loaded - DOM state:', document.readyState);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('[CREATE] DOMContentLoaded event fired');
+                initializeCreateEvent();
+            });
+        } else {
+            console.log('[CREATE] DOM already loaded - initializing immediately');
+            initializeCreateEvent();
+        }
+    </script>
+</body>
+
+</html>
