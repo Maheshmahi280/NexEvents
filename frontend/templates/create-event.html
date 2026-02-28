@@ -16,7 +16,7 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
             animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
+        
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -163,7 +163,7 @@
         .success-message.show {
             display: block;
         }
-
+        
         .success-message p {
             margin: 0 0 1rem 0;
             font-size: 18px;
@@ -172,7 +172,7 @@
             align-items: center;
             gap: 12px;
         }
-
+        
         .success-message p::before {
             content: '✓';
             display: inline-flex;
@@ -186,7 +186,7 @@
             font-weight: 800;
             font-size: 20px;
         }
-
+        
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -610,16 +610,25 @@
                 showDebugMessage('API response received (Status: ' + response.status + ')', 'info');
 
                 if (!response.ok) {
-                    // Build error message from response
+                    // Build detailed error message from response
                     let errorMsg = responseData.error || 'Failed to create event';
+                    
+                    // Handle field-specific errors
                     if (responseData.fields) {
                         const fieldErrors = Object.entries(responseData.fields)
                             .map(function(entry) {
                                 return entry[0] + ': ' + entry[1];
                             })
-                            .join('\n');
-                        errorMsg += '\n' + fieldErrors;
+                            .join(' | ');
+                        errorMsg = errorMsg + ' (' + fieldErrors + ')';
                     }
+                    
+                    // Handle detail messages
+                    if (responseData.detail) {
+                        errorMsg = responseData.detail;
+                    }
+                    
+                    console.error('[CREATE] API Error Response:', responseData);
                     throw new Error(errorMsg);
                 }
 
@@ -637,19 +646,32 @@
                     '</div>';
                 document.getElementById('successMessage').style.backgroundColor = '';
                 document.getElementById('successMessage').classList.add('show');
-                
+
                 // Scroll to success message
-                document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                document.getElementById('successMessage').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
 
             } catch (error) {
                 console.error('[CREATE] Error:', error.message);
 
-                // Show error message in the page
+                // Show error message in the page with improved styling
                 const successDiv = document.getElementById('successMessage');
                 if (successDiv) {
-                    successDiv.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+                    const errorInfo = error.message || 'Failed to create event. Please try again.';
+                    successDiv.innerHTML = '<div style="display: flex; align-items: flex-start; gap: 12px;">' +
+                        '<div style="flex-shrink: 0; width: 40px; height: 40px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 20px;">!</div>' +
+                        '<div style="flex-grow: 1;">' +
+                        '<p style="margin: 0 0 0.5rem 0; color: #dc2626; font-weight: 700; font-size: 16px;">Error Creating Event</p>' +
+                        '<p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.5;">' + errorInfo + '</p>' +
+                        '</div>' +
+                        '<button onclick="document.getElementById(\'successMessage\').classList.remove(\'show\');" style="background: none; border: none; color: #dc2626; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px; flex-shrink: 0;">×</button>' +
+                        '</div>';
                     successDiv.classList.add('show');
-                    successDiv.style.backgroundColor = '#fee2e2';
+                    successDiv.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+                    successDiv.style.border = '2px solid #ef4444';
+                    successDiv.style.borderRadius = '12px';
                 }
 
                 // Reset button
