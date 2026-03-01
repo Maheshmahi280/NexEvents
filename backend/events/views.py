@@ -28,8 +28,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework_simplejwt.tokens import RefreshToken
 import logging
 
-from .models import Event, UserProfile
-from .serializers import EventSerializer
+from .models import Event, UserProfile, Booking
+from .serializers import EventSerializer, BookingSerializer
 from .config import (
     ERROR_MESSAGES, SUCCESS_MESSAGES, VALIDATION_RULES,
     USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH,
@@ -49,16 +49,10 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 @require_http_methods(["GET"])
 def index(request):
-    """Serve home page - redirect logged-in users to their dashboard"""
-    if request.user.is_authenticated:
-        try:
-            if request.user.profile.role == 'Organizer':
-                return redirect('organizer-dashboard')
-            else:
-                return redirect('seeker-dashboard')
-        except Exception:
-            pass
-    return render(request, 'index.html')
+    """Serve home page - always show landing page, never redirect"""
+    # Force render the home page regardless of authentication status
+    # This ensures users see the landing page first when visiting root URL
+    return render(request, 'index.html', status=200)
 
 
 @require_http_methods(["GET"])
@@ -403,6 +397,8 @@ def login(request):
             role = user.profile.role
         
         logger.info(f"Successful login for user: {username} (ID: {user.id})")
+        logger.debug(f"Generated access token length: {len(access_token)}")
+        logger.debug(f"Generated refresh token length: {len(refresh_token)}")
 
         # Return tokens and user info
         return Response(
@@ -450,10 +446,8 @@ class EventListView(APIView):
 
     def get(self, request):
         try:
-            # Get all upcoming events ordered by date
-            events = Event.objects.filter(
-                date_time__gte=timezone.now()
-            ).order_by('date_time')
+            # Get all events ordered by date (show both past and future events)
+            events = Event.objects.all().order_by('-date_time')
             
             logger.info(f"EventListView accessed - Total events in db: {Event.objects.count()}")
 
@@ -583,12 +577,20 @@ class EventCreateView(APIView):
         401 Unauthorized: {'error'} - not authenticated
         500 Internal Server Error: {'error', 'detail'} - server error
     
-    Access: Authenticated users only
+    Access: Authenticated users only (JWT or Session)
     """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
+            # Check if user is authenticated
+            if not request.user or not request.user.is_authenticated:
+                logger.warning("EventCreateView accessed without authentication")
+                return Response(
+                    {'error': 'Authentication required. Please login first.'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
             logger.info(f"EventCreateView accessed - User: {request.user.username}")
             
             # Extract and sanitize input fields
@@ -840,6 +842,49 @@ class EventRSVPView(APIView):
             )
 
 
+class UserBookmarksView(APIView):
+    """
+    GET /api/events/bookmarks/
+    Retrieve all events bookmarked (interested in) by the authenticated user.
+    Useful for displaying user's bookmarked/saved events in a separate tab.
+    
+    Returns:
+        200 OK: {'bookmarks': [event objects], 'count': int} - list of bookmarked events
+        401 Unauthorized: {'error'} - user not authenticated
+        500 Internal Server Error: {'error'} - server error
+    
+    Access: Authenticated users only
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            logger.info(f"UserBookmarksView accessed - User: {request.user.username}")
+            
+            # Get all events the user is interested in
+            bookmarked_events = request.user.interested_events.all()
+            
+            # Serialize the events
+            serializer = EventSerializer(bookmarked_events, many=True)
+            
+            logger.info(f"Retrieved {bookmarked_events.count()} bookmarked events for user: {request.user.username}")
+            
+            return Response(
+                {
+                    'bookmarks': serializer.data,
+                    'count': bookmarked_events.count()
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f"UserBookmarksView error: {type(e).__name__}: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class UserEventsView(APIView):
     """
     GET /api/events/my/
@@ -1069,3 +1114,217 @@ def user_profile(request):
             {'error': 'Failed to retrieve user profile'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+class BookEventView(APIView):
+    """
+    POST /api/events/<id>/book/
+    Book an event by creating a booking record and charging the ticket price.
+    Adds the event to user's bookmarks (interested_events) and creates a booking transaction.
+    
+    URL Parameters:
+        - event_id (int): Unique event identifier
+    
+    Returns:
+        201 Created: {'message', 'booking' object} - booking created successfully
+        400 Bad Request: {'error'} - user already booked this event
+        404 Not Found: {'error'} - event doesn't exist
+        401 Unauthorized: {'error'} - not authenticated
+        500 Internal Server Error: {'error'} - server error
+    
+    Access: Authenticated users only (Seeker role)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, event_id):
+        try:
+            # Fetch event from database
+            event = Event.objects.get(id=event_id)
+            logger.info(f"BookEventView accessed - Event ID: {event_id}, User: {request.user.username}")
+
+            # Check if user already booked this event
+            existing_booking = Booking.objects.filter(
+                event=event,
+                attendee=request.user,
+                status='confirmed'
+            ).first()
+
+            if existing_booking:
+                logger.warning(f"User already booked event - Event ID: {event_id}, User: {request.user.username}")
+                return Response(
+                    {'error': 'You have already booked this event'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create booking record with event's current ticket price
+            booking = Booking.objects.create(
+                event=event,
+                attendee=request.user,
+                amount=event.ticket_price,
+                status='confirmed'
+            )
+
+            # Add event to user's interested list (bookmark)
+            if request.user not in event.interested_users.all():
+                event.interested_users.add(request.user)
+
+            logger.info(f"Booking created - Event ID: {event_id}, User: {request.user.username}, Amount: {event.ticket_price}")
+
+            # Serialize booking
+            serializer = BookingSerializer(booking)
+            return Response(
+                {
+                    'message': 'Event booked successfully!',
+                    'booking': serializer.data,
+                    'revenue_to_organizer': str(event.ticket_price)
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Event.DoesNotExist:
+            logger.warning(f"Booking attempted on non-existent event - Event ID: {event_id}")
+            return Response(
+                {'error': 'Event not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"BookEventView error: {type(e).__name__}: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class OrganizerRevenueView(APIView):
+    """
+    GET /api/organizer/revenue/
+    Get revenue statistics for the authenticated organizer.
+    Returns total revenue, booking count, and breakup by event.
+    
+    Returns:
+        200 OK: {
+            'total_revenue': float,
+            'total_bookings': int,
+            'events': [
+                {
+                    'event_id': int,
+                    'event_name': str,
+                    'revenue': float,
+                    'bookings': int,
+                    'ticket_price': float
+                }
+            ]
+        }
+        401 Unauthorized: {'error'} - not authenticated
+        403 Forbidden: {'error'} - user is not an organizer
+        500 Internal Server Error: {'error'} - server error
+    
+    Access: Authenticated Organizer users only
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Check if user is organizer
+            if not hasattr(request.user, 'profile'):
+                return Response(
+                    {'error': 'User profile not found'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            if request.user.profile.role != 'Organizer':
+                logger.warning(f"Non-organizer user attempted to access revenue - User: {request.user.username}")
+                return Response(
+                    {'error': 'Only organizers can access revenue statistics'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Get all events organized by this user
+            events = Event.objects.filter(organiser=request.user)
+            
+            events_data = []
+            total_revenue = 0
+            total_bookings = 0
+
+            for event in events:
+                event_revenue = event.get_total_revenue()
+                event_bookings = event.get_booking_count()
+                
+                total_revenue += event_revenue
+                total_bookings += event_bookings
+
+                events_data.append({
+                    'event_id': event.id,
+                    'event_name': event.name,
+                    'revenue': float(event_revenue),
+                    'bookings': event_bookings,
+                    'ticket_price': float(event.ticket_price),
+                    'date_time': event.date_time,
+                    'location': event.location,
+                })
+
+            logger.info(f"Revenue report generated - User: {request.user.username}, Total Revenue: {total_revenue}, Bookings: {total_bookings}")
+
+            return Response(
+                {
+                    'total_revenue': float(total_revenue),
+                    'total_bookings': total_bookings,
+                    'events': events_data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            logger.error(f"OrganizerRevenueView error: {type(e).__name__}: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class UserBookingsView(APIView):
+    """
+    GET /api/user/bookings/
+    Get all bookings made by the authenticated user (attendee).
+    Returns list of booked events with booking details.
+    
+    Returns:
+        200 OK: {
+            'bookings': [booking objects],
+            'count': int
+        }
+        401 Unauthorized: {'error'} - not authenticated
+        500 Internal Server Error: {'error'} - server error
+    
+    Access: Authenticated users only
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            logger.info(f"UserBookingsView accessed - User: {request.user.username}")
+            
+            # Get all confirmed bookings for this user
+            bookings = Booking.objects.filter(
+                attendee=request.user,
+                status='confirmed'
+            ).order_by('-booking_date')
+            
+            serializer = BookingSerializer(bookings, many=True)
+            
+            logger.info(f"Retrieved {bookings.count()} bookings for user: {request.user.username}")
+            
+            return Response(
+                {
+                    'bookings': serializer.data,
+                    'count': bookings.count()
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f"UserBookingsView error: {type(e).__name__}: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

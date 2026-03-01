@@ -52,3 +52,33 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_total_revenue(self):
+        """Calculate total revenue from bookings for this event"""
+        bookings = self.bookings.filter(status='confirmed')
+        return sum(booking.amount for booking in bookings)
+
+    def get_booking_count(self):
+        """Get number of confirmed bookings"""
+        return self.bookings.filter(status='confirmed').count()
+
+
+class Booking(models.Model):
+    """Track event bookings (tickets purchased by attendees)"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='bookings')
+    attendee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)  # Ticket price at time of booking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='confirmed')
+    booking_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('event', 'attendee')  # One booking per user per event
+    
+    def __str__(self):
+        return f"{self.attendee.username} - {self.event.name}"

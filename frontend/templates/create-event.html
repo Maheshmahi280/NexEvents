@@ -598,6 +598,12 @@
 
                 showDebugMessage('Sending request to /api/events/create/...', 'info');
 
+                // Log token details for debugging
+                console.log('[CREATE] Token details:');
+                console.log('  - Length:', token.length);
+                console.log('  - Starts with:', token.substring(0, 20));
+                console.log('  - Request headers:', headers);
+
                 const response = await fetch('/api/events/create/', {
                     method: 'POST',
                     headers: headers,
@@ -610,9 +616,73 @@
                 showDebugMessage('API response received (Status: ' + response.status + ')', 'info');
 
                 if (!response.ok) {
+                    // Handle 401 Unauthorized - try to refresh token
+                    if (response.status === 401) {
+                        console.warn('[CREATE] Got 401 Unauthorized - attempting token refresh...');
+                        const refreshToken = localStorage.getItem('refresh_token');
+
+                        if (refreshToken) {
+                            try {
+                                // Try to refresh the token
+                                const refreshResponse = await fetch('/api/token/refresh/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        refresh: refreshToken
+                                    })
+                                });
+
+                                if (refreshResponse.ok) {
+                                    const refreshData = await refreshResponse.json();
+                                    const newAccessToken = refreshData.access;
+                                    localStorage.setItem('access_token', newAccessToken);
+                                    console.log('[CREATE] Token refreshed successfully, retrying event creation...');
+
+                                    // Retry the original request with the new token
+                                    headers['Authorization'] = 'Bearer ' + newAccessToken;
+                                    const retryResponse = await fetch('/api/events/create/', {
+                                        method: 'POST',
+                                        headers: headers,
+                                        credentials: 'same-origin',
+                                        body: JSON.stringify(eventData)
+                                    });
+
+                                    if (retryResponse.ok) {
+                                        const retryData = await retryResponse.json();
+                                        // Continue with success handling
+                                        localStorage.setItem('eventCreatedSuccess', eventData.name);
+                                        // [SUCCESS BLOCK WILL CONTINUE BELOW]
+                                        throw {
+                                            retrySuccess: true,
+                                            eventData: retryData
+                                        };
+                                    } else {
+                                        throw new Error('Token refresh succeeded but event creation still failed');
+                                    }
+                                } else {
+                                    throw new Error('Failed to refresh authentication token. Please log in again.');
+                                }
+                            } catch (refreshError) {
+                                if (refreshError.retrySuccess) {
+                                    // Handle the successful retry
+                                    const retryData = refreshError.eventData;
+                                    console.log('[CREATE] Event created successfully after token refresh!');
+                                    localStorage.setItem('eventCreatedSuccess', eventData.name);
+                                } else {
+                                    console.error('[CREATE] Token refresh failed:', refreshError.message);
+                                    throw new Error(refreshError.message || 'Authentication expired and could not be refreshed. Please log in again.');
+                                }
+                            }
+                        } else {
+                            throw new Error('Your session has expired. Please log in again.');
+                        }
+                    }
+
                     // Build detailed error message from response
-                    let errorMsg = responseData.error || 'Failed to create event';
-                    
+                    let errorMsg = responseData.error || responseData.detail || 'Failed to create event';
+
                     // Handle field-specific errors
                     if (responseData.fields) {
                         const fieldErrors = Object.entries(responseData.fields)
@@ -622,12 +692,7 @@
                             .join(' | ');
                         errorMsg = errorMsg + ' (' + fieldErrors + ')';
                     }
-                    
-                    // Handle detail messages
-                    if (responseData.detail) {
-                        errorMsg = responseData.detail;
-                    }
-                    
+
                     console.error('[CREATE] API Error Response:', responseData);
                     throw new Error(errorMsg);
                 }

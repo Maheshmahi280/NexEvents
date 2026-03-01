@@ -22,7 +22,6 @@
     main {
         padding-top: 0;
     }
-
     /* Hero Section */
     
     .hero {
@@ -63,7 +62,8 @@
     }
     
     @keyframes float {
-        0%, 100% {
+        0%,
+        100% {
             transform: translateY(0px);
         }
         50% {
@@ -124,7 +124,7 @@
         position: relative;
         overflow: hidden;
     }
-
+    
     .btn-hero::before {
         content: '';
         position: absolute;
@@ -138,13 +138,13 @@
         transition: width 0.6s ease, height 0.6s ease;
         z-index: 0;
     }
-
+    
     .btn-hero:hover::before {
         width: 300px;
         height: 300px;
     }
-
-    .btn-hero > * {
+    
+    .btn-hero>* {
         position: relative;
         z-index: 1;
     }
@@ -155,6 +155,18 @@
     }
     
     .btn-primary-light:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+    }
+    
+    .btn-primary {
+        background: white;
+        color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--primary-dark);
         transform: translateY(-3px);
         box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
     }
@@ -184,7 +196,7 @@
             transform: translateY(0);
         }
     }
-
+    
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -195,7 +207,6 @@
             transform: translateY(0);
         }
     }
-    
     /* Features Section */
     
     .features-section {
@@ -246,13 +257,30 @@
         animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         animation-fill-mode: both;
     }
-
-    .feature-card:nth-child(1) { animation-delay: 0.1s; }
-    .feature-card:nth-child(2) { animation-delay: 0.2s; }
-    .feature-card:nth-child(3) { animation-delay: 0.3s; }
-    .feature-card:nth-child(4) { animation-delay: 0.4s; }
-    .feature-card:nth-child(5) { animation-delay: 0.5s; }
-    .feature-card:nth-child(6) { animation-delay: 0.6s; }
+    
+    .feature-card:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+    
+    .feature-card:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .feature-card:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+    
+    .feature-card:nth-child(4) {
+        animation-delay: 0.4s;
+    }
+    
+    .feature-card:nth-child(5) {
+        animation-delay: 0.5s;
+    }
+    
+    .feature-card:nth-child(6) {
+        animation-delay: 0.6s;
+    }
     
     .feature-card:hover {
         border-color: var(--primary-color);
@@ -266,7 +294,7 @@
         display: block;
         transition: all 0.3s ease;
     }
-
+    
     .feature-card:hover .feature-icon {
         transform: scale(1.15) rotate(5deg);
     }
@@ -285,7 +313,6 @@
         line-height: 1.6;
         font-weight: 400;
     }
-
     /* Events Section */
     
     .events-section {
@@ -350,11 +377,22 @@
         animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         animation-fill-mode: both;
     }
-
-    .event-card:nth-child(1) { animation-delay: 0.05s; }
-    .event-card:nth-child(2) { animation-delay: 0.1s; }
-    .event-card:nth-child(3) { animation-delay: 0.15s; }
-    .event-card:nth-child(4) { animation-delay: 0.2s; }
+    
+    .event-card:nth-child(1) {
+        animation-delay: 0.05s;
+    }
+    
+    .event-card:nth-child(2) {
+        animation-delay: 0.1s;
+    }
+    
+    .event-card:nth-child(3) {
+        animation-delay: 0.15s;
+    }
+    
+    .event-card:nth-child(4) {
+        animation-delay: 0.2s;
+    }
     
     .event-card:hover {
         transform: translateY(-8px);
@@ -374,7 +412,7 @@
         object-fit: cover;
         transition: transform 0.3s ease;
     }
-
+    
     .event-card:hover .event-image img {
         transform: scale(1.05);
     }
@@ -550,50 +588,39 @@
             padding: 80px 20px;
             min-height: 500px;
         }
-
         .hero-content h1 {
             font-size: 36px;
             margin-bottom: 20px;
         }
-
         .hero-content p {
             font-size: 16px;
             margin-bottom: 30px;
         }
-
         .hero-actions {
             gap: 12px;
         }
-
         .btn-hero {
             padding: 12px 28px;
             font-size: 14px;
         }
-
         .section-title h2 {
             font-size: 28px;
         }
-
         .features-section {
             padding: 60px 20px;
         }
-
         .events-section {
             padding: 60px 20px;
         }
-
         .event-cards {
             grid-template-columns: 1fr;
         }
-
         .search-filter-area {
             flex-direction: column;
         }
-
         .search-input {
             min-width: 100%;
         }
-
         .category-select {
             min-width: 100%;
         }
@@ -606,8 +633,13 @@
         <h1>Discover Amazing Events That Matter</h1>
         <p>Connect with like-minded people at events you'll love</p>
         <div class="hero-actions">
-            {% if user.is_authenticated %} {% else %}
-            <a href="/join" class="btn-hero btn-secondary-light">Join Now</a> {% endif %}
+            {% if user.is_authenticated %} {% if user.profile.role == 'Organizer' %}
+            <a href="/organizer-dashboard" class="btn-hero btn-primary">Go to Dashboard</a>
+            <a href="/create-event" class="btn-hero btn-secondary-light">Create Event</a> {% else %}
+            <a href="/seeker-dashboard" class="btn-hero btn-primary">Browse Events</a>
+            <a href="/seeker-dashboard" class="btn-hero btn-secondary-light">My Bookmarks</a> {% endif %} {% else %}
+            <a href="/join" class="btn-hero btn-secondary-light">Join Now</a>
+            <a href="/login" class="btn-hero btn-primary">Login</a> {% endif %}
         </div>
     </div>
 </section>
@@ -656,9 +688,5 @@
 
 <!-- Events section removed - Events now appear in "Attending Events" after login -->
 {% endblock %} {% block extra_js %}
-<script src="/static/js/api.js"></script>
-<script src="/static/js/auth.js"></script>
-<script src="/static/js/events.js"></script>
-
-<!-- Events loading script removed - Events are now in Attending Events section on user dashboard -->
+<!-- No additional scripts needed for home page -->
 {% endblock %}

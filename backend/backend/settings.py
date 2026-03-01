@@ -129,7 +129,10 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
+    'EXCEPTION_HANDLER': 'backend.custom_exception_handler.custom_exception_handler',
 }
+
 
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True
+

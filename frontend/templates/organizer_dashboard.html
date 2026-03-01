@@ -451,13 +451,13 @@
             if (toastDiv && toastMessage) {
                 toastMessage.textContent = 'You have successfully created event "' + eventCreatedSuccess + '"';
                 toastDiv.style.display = 'block';
-                
+
                 // Auto-hide after 5 seconds
                 setTimeout(function() {
                     toastDiv.style.display = 'none';
                 }, 5000);
             }
-            
+
             // Clear the flag
             localStorage.removeItem('eventCreatedSuccess');
         }
@@ -481,7 +481,72 @@
         }
 
         await loadOrganizerEvents();
+        await loadOrganizerRevenue();
     });
+
+    async function loadOrganizerRevenue() {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            console.warn('[ORG-DASH] No token, cannot load revenue');
+            return;
+        }
+
+        try {
+            console.log('[ORG-DASH] Fetching organizer revenue from /api/organizer/revenue/ ...');
+            const response = await fetch('/api/organizer/revenue/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('[ORG-DASH] Revenue response status:', response.status);
+
+            if (response.status === 401) {
+                console.warn('[ORG-DASH] Token expired when fetching revenue');
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    try {
+                        const refreshResp = await fetch('/api/token/refresh/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                refresh: refreshToken
+                            })
+                        });
+                        if (refreshResp.ok) {
+                            const refreshData = await refreshResp.json();
+                            localStorage.setItem('access_token', refreshData.access);
+                            return loadOrganizerRevenue();
+                        }
+                    } catch (e) {
+                        console.error('[ORG-DASH] Token refresh failed on revenue load:', e);
+                    }
+                }
+                return;
+            }
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[ORG-DASH] Revenue data loaded:', data);
+
+                // Update total revenue with actual booking data
+                if (data.total_revenue !== undefined && data.total_bookings !== undefined) {
+                    document.getElementById('total-revenue').textContent = '₹' + parseFloat(data.total_revenue).toFixed(2);
+
+                    // Store revenue data for potential display later
+                    window.organizerRevenueData = data;
+                }
+            } else {
+                console.warn('[ORG-DASH] Failed to fetch revenue, status:', response.status);
+            }
+        } catch (error) {
+            console.error('[ORG-DASH] Error loading revenue:', error);
+        }
+    }
 
     async function loadOrganizerEvents() {
         const token = localStorage.getItem('access_token');
@@ -565,12 +630,10 @@
         const now = new Date();
         let totalAttendees = 0;
         let activeEvents = 0;
-        let totalRevenue = 0;
 
         events.forEach(event => {
             const eventDate = new Date(event.date_time);
             totalAttendees += event.interested_count || 0;
-            totalRevenue += (parseFloat(event.ticket_price) * (event.interested_count || 0));
 
             if (eventDate > now) {
                 activeEvents++;
@@ -580,7 +643,13 @@
         document.getElementById('total-events').textContent = events.length;
         document.getElementById('total-attendees').textContent = totalAttendees;
         document.getElementById('active-events').textContent = activeEvents;
-        document.getElementById('total-revenue').textContent = '₹' + totalRevenue.toFixed(2);
+
+        // Revenue will be updated by loadOrganizerRevenue() with actual booking data
+        // If no revenue loaded yet, show as loading
+        const revenueEl = document.getElementById('total-revenue');
+        if (revenueEl && !revenueEl.textContent.startsWith('₹')) {
+            revenueEl.textContent = '₹0.00';
+        }
     }
 
     function createEventRow(event) {

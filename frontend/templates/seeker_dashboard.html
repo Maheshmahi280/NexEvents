@@ -226,6 +226,62 @@
         text-decoration: none;
     }
     
+    .btn-bookmark {
+        font-size: 1.25rem;
+        cursor: pointer;
+        color: #cbd5e1;
+        transition: all 0.3s ease;
+        border: none;
+        background: none;
+        padding: 0;
+    }
+    
+    .btn-bookmark:hover {
+        color: var(--primary-color);
+        transform: scale(1.2);
+    }
+    
+    .btn-bookmark.bookmarked {
+        color: var(--primary-color);
+    }
+    
+    .tab-navigation {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .tab-btn {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: none;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+    }
+    
+    .tab-btn:hover {
+        color: var(--primary-color);
+    }
+    
+    .tab-btn.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
@@ -353,134 +409,250 @@
 
 <!-- Main Content -->
 <div class="container-lg">
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <input type="text" id="searchInput" placeholder="Search events..." class="flex-grow-1" style="max-width: 300px;">
-        <select id="categoryFilter" class="form-select" style="max-width: 200px;">
-            <option value="">All Categories</option>
-            <option value="Tech">Technology</option>
-            <option value="Arts">Arts</option>
-            <option value="Sports">Sports</option>
-            <option value="Education">Education</option>
-        </select>
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-btn active" onclick="switchTab('browse')">
+            <i class="fas fa-search"></i> Browse Events
+        </button>
+        <button class="tab-btn" onclick="switchTab('bookmarks')">
+            <i class="fas fa-bookmark"></i> My Bookmarks
+        </button>
     </div>
 
-    <!-- Events Grid -->
-    <div class="row" id="eventsContainer">
-        <!-- Events will be loaded here via JavaScript -->
-        <div class="col-12">
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+    <!-- Browse Events Tab -->
+    <div id="browseTab" class="tab-content active">
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <input type="text" id="searchInput" placeholder="Search events..." class="flex-grow-1" style="max-width: 300px;">
+            <select id="categoryFilter" class="form-select" style="max-width: 200px;">
+                <option value="">All Categories</option>
+                <option value="Tech">Technology</option>
+                <option value="Arts">Arts</option>
+                <option value="Sports">Sports</option>
+                <option value="Education">Education</option>
+            </select>
+        </div>
+
+        <!-- Events Grid -->
+        <div class="row" id="eventsContainer">
+            <!-- Events will be loaded here via JavaScript -->
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading events...</p>
                 </div>
-                <p class="mt-3">Loading events...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="browseEmptyState" style="display: none;">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <div class="empty-state-title">No Events Found</div>
+                <p class="empty-state-text">Try adjusting your search or filter criteria</p>
             </div>
         </div>
     </div>
 
-    <!-- Empty State -->
-    <div id="emptyState" style="display: none;">
-        <div class="empty-state">
-            <div class="empty-state-icon">
-                <i class="fas fa-inbox"></i>
+    <!-- My Bookmarks Tab -->
+    <div id="bookmarksTab" class="tab-content">
+        <!-- Bookmarks Grid -->
+        <div class="row" id="bookmarksContainer">
+            <!-- Bookmarks will be loaded here via JavaScript -->
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading your bookmarks...</p>
+                </div>
             </div>
-            <div class="empty-state-title">No Events Found</div>
-            <p class="empty-state-text">Try adjusting your search or filter criteria</p>
+        </div>
+
+        <!-- Empty State for Bookmarks -->
+        <div id="bookmarksEmptyState" style="display: none;">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <div class="empty-state-title">No Bookmarks Yet</div>
+                <p class="empty-state-text">Browse events and bookmark your favorites to see them here</p>
+            </div>
         </div>
     </div>
-</div>
 
-{% endblock %} {% block extra_js %}
-<script>
-    // Load events on page load
-    document.addEventListener('DOMContentLoaded', async function() {
-        console.log('[SEEKER-DASH] Initializing seeker dashboard...');
+    {% endblock %} {% block extra_js %}
+    <script>
+        let allEvents = [];
+        let userBookmarks = new Set();
 
-        // Store token from URL if present (first visit after login)
-        const urlParams = new URLSearchParams(window.location.search);
-        const tokenFromUrl = urlParams.get('token');
-        if (tokenFromUrl) {
-            console.log('[SEEKER-DASH] Storing token from URL');
-            localStorage.setItem('access_token', tokenFromUrl);
-            window.history.replaceState({}, document.title, window.location.pathname);
+        // Load events on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[SEEKER-DASH] Initializing seeker dashboard...');
+
+            // Store token from URL if present (first visit after login)
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                console.log('[SEEKER-DASH] Storing token from URL');
+                localStorage.setItem('access_token', tokenFromUrl);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            await loadSeekerEvents();
+            await loadUserBookmarks();
+            setupFilters();
+        });
+
+        function switchTab(tabName) {
+            console.log('[SEEKER-DASH] Switching to tab:', tabName);
+
+            // Hide all tabs
+            document.getElementById('browseTab').classList.remove('active');
+            document.getElementById('bookmarksTab').classList.remove('active');
+
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            if (tabName === 'browse') {
+                document.getElementById('browseTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else if (tabName === 'bookmarks') {
+                document.getElementById('bookmarksTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            }
         }
 
-        await loadSeekerEvents();
-        setupFilters();
-    });
+        async function loadSeekerEvents(search, category) {
+            search = search || '';
+            category = category || '';
+            try {
+                const container = document.getElementById('eventsContainer');
+                let url = '/api/events/';
 
-    async function loadSeekerEvents(search, category) {
-        search = search || '';
-        category = category || '';
-        try {
-            const container = document.getElementById('eventsContainer');
-            let url = '/api/events/';
+                // Add query parameters
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (category) params.append('category', category);
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
 
-            // Add query parameters
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (category) params.append('category', category);
-            if (params.toString()) {
-                url += '?' + params.toString();
+                const token = localStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+
+                const response = await fetch(url, {
+                    headers: headers
+                });
+                const data = await response.json();
+
+                allEvents = data.events || [];
+
+                // Update stats
+                document.getElementById('total-events').textContent = allEvents.length;
+                document.getElementById('month-count').textContent = countThisMonth(allEvents);
+                document.getElementById('bookmarked-count').textContent = userBookmarks.size;
+
+                if (allEvents.length === 0) {
+                    container.innerHTML = '';
+                    document.getElementById('browseEmptyState').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('browseEmptyState').style.display = 'none';
+                container.innerHTML = allEvents.map(event => createEventCard(event, true)).join('');
+
+            } catch (error) {
+                console.error('[SEEKER-DASH] Error loading events:', error);
             }
+        }
 
-            const token = localStorage.getItem('access_token');
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            if (token) {
-                headers['Authorization'] = 'Bearer ' + token;
+        async function loadUserBookmarks() {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    console.log('[SEEKER-DASH] No token found, skipping bookmarks load');
+                    return;
+                }
+
+                const response = await fetch('/api/events/bookmarks/', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (response.status === 401) {
+                    console.warn('[SEEKER-DASH] Unauthorized - bookmarks endpoint');
+                    return;
+                }
+
+                const data = await response.json();
+                const bookmarks = data.bookmarks || [];
+
+                // Store bookmark IDs in a Set for quick lookup
+                userBookmarks.clear();
+                bookmarks.forEach(bookmark => {
+                    userBookmarks.add(bookmark.id);
+                });
+
+                console.log('[SEEKER-DASH] Loaded', userBookmarks.size, 'bookmarks');
+
+                const container = document.getElementById('bookmarksContainer');
+
+                if (bookmarks.length === 0) {
+                    container.innerHTML = '';
+                    document.getElementById('bookmarksEmptyState').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('bookmarksEmptyState').style.display = 'none';
+                container.innerHTML = bookmarks.map(event => createEventCard(event, false)).join('');
+
+            } catch (error) {
+                console.error('[SEEKER-DASH] Error loading bookmarks:', error);
             }
+        }
 
-            const response = await fetch(url, {
-                headers: headers
+        function createEventCard(event, showBookmarkButton) {
+            const eventDate = new Date(event.date_time);
+            const dateStr = eventDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
             });
-            const data = await response.json();
+            const timeStr = eventDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
 
-            const events = data.events || [];
+            const description = event.description.length > 80 ?
+                event.description.substring(0, 80) + '...' :
+                event.description;
 
-            // Update stats
-            document.getElementById('total-events').textContent = events.length;
-            document.getElementById('month-count').textContent = countThisMonth(events);
-            document.getElementById('bookmarked-count').textContent = countBookmarked(events);
+            const isBookmarked = userBookmarks.has(event.id);
+            const bookmarkButtonClass = isBookmarked ? 'bookmarked' : '';
 
-            if (events.length === 0) {
-                container.innerHTML = '';
-                document.getElementById('emptyState').style.display = 'block';
-                return;
-            }
-
-            document.getElementById('emptyState').style.display = 'none';
-            container.innerHTML = events.map(event => createEventCard(event)).join('');
-
-        } catch (error) {
-            console.error('Error loading events:', error);
-        }
-    }
-
-    function createEventCard(event) {
-        const eventDate = new Date(event.date_time);
-        const dateStr = eventDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-        const timeStr = eventDate.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-
-        const description = event.description.length > 80 ?
-            event.description.substring(0, 80) + '...' :
-            event.description;
-
-        return `
+            return `
             <div class="col-md-6 col-lg-4 mb-4">
                 <div class="event-card">
                     <div class="event-image">
                         ${event.cover_image ? `<img src="${event.cover_image}" alt="${event.name}">` : '<i class="fas fa-image"></i>'}
                         <span class="event-category-badge">${event.category}</span>
+                        ${showBookmarkButton ? `<button class="btn-bookmark ${bookmarkButtonClass}" onclick="toggleBookmark(${event.id}, event)" title="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}">
+                            <i class="fas fa-bookmark"></i>
+                        </button>` : ''}
                     </div>
                     <div class="event-body">
                         <h5 class="event-title">${event.name}</h5>
@@ -517,6 +689,63 @@
         `;
     }
 
+    async function toggleBookmark(eventId, event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            console.log('[SEEKER-DASH] Toggling bookmark for event:', eventId);
+
+            const response = await fetch(`/api/events/${eventId}/rsvp/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to toggle bookmark');
+            }
+
+            const data = await response.json();
+
+            // Update local bookmark set
+            if (userBookmarks.has(eventId)) {
+                userBookmarks.delete(eventId);
+                console.log('[SEEKER-DASH] Removed bookmark for event:', eventId);
+            } else {
+                userBookmarks.add(eventId);
+                console.log('[SEEKER-DASH] Added bookmark for event:', eventId);
+            }
+
+            // Update the button styling
+            const button = event.target.closest('.btn-bookmark');
+            if (button) {
+                button.classList.toggle('bookmarked');
+            }
+
+            // Update bookmark count
+            document.getElementById('bookmarked-count').textContent = userBookmarks.size;
+
+            // Reload bookmarks tab if it's currently visible
+            const bookmarksTab = document.getElementById('bookmarksTab');
+            if (bookmarksTab.classList.contains('active')) {
+                await loadUserBookmarks();
+            }
+
+        } catch (error) {
+            console.error('[SEEKER-DASH] Error toggling bookmark:', error);
+            alert('Error updating bookmark. Please try again.');
+        }
+    }
+
     function countThisMonth(events) {
         const now = new Date();
         const thisMonth = events.filter(event => {
@@ -525,11 +754,6 @@
                    eventDate.getFullYear() === now.getFullYear();
         });
         return thisMonth.length;
-    }
-
-    function countBookmarked(events) {
-        // Assuming bookmarked events are those in interested_users
-        return 0; // This would be calculated based on user's interests
     }
 
     function setupFilters() {
@@ -553,8 +777,72 @@
         loadSeekerEvents(search, category);
     }
 
-    function bookEvent(eventId) {
-        alert(`Booked event ${eventId}! (Feature coming soon)`);
+    async function bookEvent(eventId) {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            console.log('[SEEKER-DASH] Booking event:', eventId);
+
+            // Find the event details from allEvents
+            const eventData = allEvents.find(e => e.id === eventId);
+            if (!eventData) {
+                throw new Error('Event data not found');
+            }
+
+            const eventName = eventData.name;
+            const ticketPrice = parseFloat(eventData.ticket_price);
+
+            // Show confirmation dialog
+            const confirmBooking = confirm(
+                `Book event: "${eventName}"?\n\nTicket Price: ₹${ticketPrice.toFixed(2)}\n\nClick OK to confirm.`
+            );
+
+            if (!confirmBooking) {
+                console.log('[SEEKER-DASH] Booking cancelled by user');
+                return;
+            }
+
+            // Make booking API call
+            const response = await fetch(`/api/events/${eventId}/book/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.status === 201) {
+                // Booking successful
+                console.log('[SEEKER-DASH] Booking successful:', data);
+                
+                // Show success message with revenue info
+                const bookingData = data.booking;
+                const revenueToOrganizer = data.revenue_to_organizer;
+                
+                alert(
+                    `Booking Confirmed!\n\nEvent: ${eventName}\nTicket Price: ₹${ticketPrice.toFixed(2)}\n\nThank you for your booking!\n\n📊 Revenue to organizer: ₹${revenueToOrganizer}`
+                );
+
+                // Reload events and bookmarks to update UI
+                await loadSeekerEvents();
+                await loadUserBookmarks();
+                
+            } else if (response.status === 400 && data.error === 'You have already booked this event') {
+                alert('You have already booked this event!');
+            } else {
+                throw new Error(data.error || 'Booking failed');
+            }
+
+        } catch (error) {
+            console.error('[SEEKER-DASH] Error booking event:', error);
+            alert(`Error: ${error.message || 'Failed to book event. Please try again.'}`);
+        }
     }
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}

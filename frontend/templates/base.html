@@ -45,8 +45,13 @@
             color: #1e293b;
             line-height: 1.6;
         }
-
-        h1, h2, h3, h4, h5, h6 {
+        
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
             font-family: 'Poppins', sans-serif;
             font-weight: 700;
         }
@@ -63,7 +68,7 @@
             transition: all 0.3s ease;
             padding: 0.75rem 0;
         }
-
+        
         .navbar.scrolling {
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
@@ -105,7 +110,7 @@
         .nav-link:hover {
             color: var(--primary-color) !important;
         }
-
+        
         .nav-link:hover::after {
             width: 100%;
         }
@@ -113,7 +118,7 @@
         .nav-link.active {
             color: var(--primary-color) !important;
         }
-
+        
         .nav-link.active::after {
             width: 100%;
         }
@@ -134,7 +139,7 @@
             position: relative;
             overflow: hidden;
         }
-
+        
         .btn-logout::before {
             content: '';
             position: absolute;
@@ -146,7 +151,7 @@
             transition: left 0.3s ease;
             z-index: -1;
         }
-
+        
         .btn-logout:hover::before {
             left: 100%;
         }
@@ -197,11 +202,11 @@
             color: var(--primary-color);
             transform: translateY(-2px);
         }
-
+        
         .footer-socials a {
             transition: all 0.3s ease;
         }
-
+        
         .footer-socials a:hover {
             color: var(--primary-color) !important;
             transform: scale(1.2);
@@ -221,7 +226,7 @@
             font-family: 'Poppins', sans-serif;
             font-weight: 500;
         }
-
+        
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -232,26 +237,26 @@
                 transform: translateY(0);
             }
         }
-
         /* Scrollbar Styling */
-        ::-webkit-scrollbar {
+        
+         ::-webkit-scrollbar {
             width: 8px;
         }
-
-        ::-webkit-scrollbar-track {
+        
+         ::-webkit-scrollbar-track {
             background: var(--light-bg);
         }
-
-        ::-webkit-scrollbar-thumb {
+        
+         ::-webkit-scrollbar-thumb {
             background: var(--primary-color);
             border-radius: 4px;
         }
-
-        ::-webkit-scrollbar-thumb:hover {
+        
+         ::-webkit-scrollbar-thumb:hover {
             background: var(--primary-dark);
         }
-
         /* General Animations */
+        
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -262,7 +267,7 @@
                 transform: translateY(0);
             }
         }
-
+        
         .fade-in-up {
             animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -327,18 +332,23 @@
                             <i class="fas fa-home"></i> Home
                         </a>
                     </li>
-                    {% if user.is_authenticated %} {% if user.profile.role == 'Organizer' %}
+                    {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'create-event-page' %}">
-                            <i class="fas fa-plus"></i> Create Event
+                        {% if user.profile.role == 'Organizer' %}
+                        <a class="nav-link" href="{% url 'organizer-dashboard' %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
                         </a>
+                        {% else %}
+                        <a class="nav-link" href="{% url 'seeker-dashboard' %}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        {% endif %}
                     </li>
-                    {% endif %}
 
                     <li class="nav-item">
                         <span class="nav-link" style="cursor: default;">
-                                <i class="fas fa-user-circle"></i> {{ user.username }}
-                            </span>
+                            <i class="fas fa-user-circle"></i> {{ user.username }}
+                        </span>
                     </li>
 
                     <li class="nav-item">
