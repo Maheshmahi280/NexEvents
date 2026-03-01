@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: nexevents
+    env: python
+    buildCommand: pip install -r requirements.txt && cd backend && python manage.py collectstatic --no-input && python manage.py migrate
+    startCommand: cd backend && gunicorn backend.wsgi:application
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexevents-db
+          property: connectionString
+
+databases:
+  - name: nexevents-db
+    databaseName: nexevents_db
+    user: nexevents_user
